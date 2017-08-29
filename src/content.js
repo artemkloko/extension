@@ -12,12 +12,14 @@ var textInput;
 
 var passphrase = 'super long and hard to guess secret';
 
-var url = chrome.runtime.getURL('back.html');
+var url = chrome.runtime.getURL('templates/input-form.html');
 
 var observer = new MutationObserver(function(mutations) {
   mutations.forEach(function(mutation) {
-    console.log(mutation);
-    if (!mutation.addedNodes) return
+
+    // console.log(mutation);
+
+    if (!mutation.addedNodes) return;
 
     for (var i = 0; i < mutation.addedNodes.length; i++) {
         // do things to your newly added nodes here
@@ -30,7 +32,7 @@ var observer = new MutationObserver(function(mutations) {
             if ( sibling !== null )
             {
                 textInputC = true;
-                console.log('created back.html iframe');
+                console.log('created input-form.html iframe');
                 var parent = sibling.parentNode;
                 textInput = document.createElement( 'iframe' );
                 textInput.src = url;
@@ -84,16 +86,16 @@ var observer = new MutationObserver(function(mutations) {
             }
         }
     }
-  })
-})
+  });
+});
 
 
 
 observer.observe( document.body, {
-    childList: true
-  , subtree: true
-  , attributes: false
-  , characterData: false
+    childList: true,
+    subtree: true,
+    attributes: false,
+    characterData: false
 } );
 
 // Listen for messages

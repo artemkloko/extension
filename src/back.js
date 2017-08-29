@@ -1,5 +1,6 @@
 console.log("back.js started");
 
+
 // A function to use as callback
 function doStuffWithDom(domContent) {
     console.log('I received the following DOM content:\n' );
@@ -16,8 +17,12 @@ var clicked = function ()
 
 var loaded = function ()
 {
+    console.log(window.location);
     var myEl = document.getElementById('send');
-    myEl.addEventListener('click', clicked, false);
+    if ( myEl !== null )
+    {
+        myEl.addEventListener('click', clicked, false);
+    }
 };
 
 document.addEventListener('DOMContentLoaded', loaded, false);

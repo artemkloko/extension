@@ -5,23 +5,23 @@
   "content_scripts": [
     {
       "matches": [
-        "<all_urls>"
+        "https://www.facebook.com/messages/*"
       ],
-      "js": ["openpgp.js", "keys.js", "content.js"]
+      "js": ["lib/openpgp.js", "src/keys.js", "src/content.js"]
     }
   ],
   "background": {
-    "scripts": [ "back.js" ],
+    "scripts": [ "src/back.js" ],
     "persistent": false
   },
 
   // "content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'",
   "web_accessible_resources" : [
-    "back.html"
-  ],
-  "browser_action": {
-    "default_title": "Test Extension"
-  },
+    // "src/back.js",
+    "templates/input-form.html",
+    "templates/message.html"
+  ]
+  // ,
 
-  "permissions": ["activeTab"]
+  // "permissions": ["activeTab"]
 }
