@@ -6,22 +6,49 @@ function doStuffWithDom(domContent) {
     console.log('I received the following DOM content:\n' );
 }
 
-var clicked = function ()
+var sendMessage = function ( value, callback )
 {
-    var myEl = document.getElementById('text');
-
     chrome.tabs.getCurrent(function(tab){
-        chrome.tabs.sendMessage(tab.id, {text: myEl.value}, doStuffWithDom);
+        chrome.tabs.sendMessage(tab.id, value, callback);
     });
 };
 
 var loaded = function ()
 {
-    console.log(window.location);
+    // console.log(window.location);
+
+    // set click 
     var myEl = document.getElementById('send');
     if ( myEl !== null )
     {
-        myEl.addEventListener('click', clicked, false);
+        myEl.addEventListener('click', function ()
+        {
+            sendMessage( 
+            {
+                encrypt : document.getElementById('text').value 
+            } );
+        }, false);
+    }
+
+    // try to decrypt message
+    var search = window.location.search;
+    var searchParts = search.replace( /^\?/, '' ).split( '&' );
+    var params = searchParts.reduce( function ( acc, searchPart ) 
+    {
+        var split = searchPart.split( '=' );
+        acc[ split[ 0 ] ] = split[ 1 ];
+        return acc;
+    }, {} );
+
+    if ( typeof params.message === 'string' )
+    {
+        sendMessage( 
+        {
+            decrypt : params.message
+        }, function ( decrypted ) 
+        {
+            document.getElementsByTagName( 'body' )[ 0 ].innerHTML = decrypted;
+        } );
     }
 };
 

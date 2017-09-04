@@ -12,7 +12,8 @@ var textInput;
 
 var passphrase = 'super long and hard to guess secret';
 
-var url = chrome.runtime.getURL('templates/input-form.html');
+var inputFormSrcUrl = chrome.runtime.getURL('templates/input-form.html');
+var messageSrcUrl = chrome.runtime.getURL('templates/message.html');
 
 var observer = new MutationObserver(function(mutations) {
   mutations.forEach(function(mutation) {
@@ -35,7 +36,7 @@ var observer = new MutationObserver(function(mutations) {
                 console.log('created input-form.html iframe');
                 var parent = sibling.parentNode;
                 textInput = document.createElement( 'iframe' );
-                textInput.src = url;
+                textInput.src = inputFormSrcUrl;
                 textInput.setAttribute( 'width', '300px' );
                 textInput.setAttribute( 'height', '50px' );
                 parent.insertBefore( textInput, sibling );
@@ -45,16 +46,47 @@ var observer = new MutationObserver(function(mutations) {
         if ( /class=("|')_aok("|')/.test( node.innerHTML ) )
         {
             // console.log(node.innerHTML);
-            var regexp = /-----BEGIN PGP MESSAGE-----[^-]*-----END PGP MESSAGE-----/g;
-            var matches = node.innerHTML.match( regexp );
-            if ( matches !== null )
-            {
-                matches.forEach( function ( match )
-                {
-                    var encrypted = match;
-                    // encrypted = match.replace( /\s+Id: \d+\n\n/, '\n\n' );
+            var regexp = />(-----BEGIN PGP MESSAGE-----[^-]*-----END PGP MESSAGE-----)</g;
+            var iframe = '<iframe src="' + messageSrcUrl + '?message=$1" width="300px" height="50px"></iframe>';
+            node.innerHTML = node.innerHTML.replace( regexp, '>' + iframe + '<' );
+        }
+    }
+  });
+});
 
-                    console.log( 'trying to decrypt', encrypted );
+
+
+observer.observe( document.body, {
+    childList: true,
+    subtree: true,
+    attributes: false,
+    characterData: false
+} );
+
+var encrypt = function ( decrypted, callback )
+{
+    console.log( 'trying to encrypt', decrypted);
+
+    var privKeyObj = openpgp.key.readArmored(thisPerson.privkey).keys[0];
+    privKeyObj.decrypt(passphrase);
+
+    options = {
+        data: decrypted,                             // input as String (or Uint8Array)
+        publicKeys: openpgp.key.readArmored(keys.alice.pubkey).keys,  // for encryption
+        privateKeys: privKeyObj // for signing (optional)
+    };
+
+    openpgp.encrypt(options).then(function(ciphertext) {
+        encrypted = ciphertext.data; 
+        // console.log( encrypted );
+        callback( encrypted );
+    });
+};
+
+var decrypt = function ( encrypted, callback )
+{
+
+                     console.log( 'trying to decrypt', encrypted );
 
                     var privKeyObj = openpgp.key.readArmored(thisPerson.privkey).keys[0];
                     privKeyObj.decrypt(passphrase);
@@ -75,88 +107,69 @@ var observer = new MutationObserver(function(mutations) {
                         openpgp.decrypt(options).then(function(plaintext) {
                             var decrypted = plaintext.data; // 'Hello, World!'
                             console.log( 'decrypted', decrypted );
-                            node.innerHTML = node.innerHTML.replace( match, decrypted );
+                            callback( decrypted );
                         });
                     }
                     catch ( e )
                     {
                         console.log( e );
                     }
-                } );
-            }
-        }
-    }
-  });
-});
-
-
-
-observer.observe( document.body, {
-    childList: true,
-    subtree: true,
-    attributes: false,
-    characterData: false
-} );
+};
 
 // Listen for messages
 chrome.runtime.onMessage.addListener(function (msg, sender, sendResponse) {
 
-    console.log( 'trying to encrypt', msg);
 
-    var privKeyObj = openpgp.key.readArmored(thisPerson.privkey).keys[0];
-    privKeyObj.decrypt(passphrase);
-
-    options = {
-        data: msg.text,                             // input as String (or Uint8Array)
-        publicKeys: openpgp.key.readArmored(keys.alice.pubkey).keys,  // for encryption
-        privateKeys: privKeyObj // for signing (optional)
-    };
-
-    openpgp.encrypt(options).then(function(ciphertext) {
-        encrypted = ciphertext.data; // '-----BEGIN PGP MESSAGE ... END PGP MESSAGE-----'
-        // console.log( encrypted );
-        console.log(  );
-        // var el = document.querySelector('div[contenteditable="true"] span[data-text="true"]');
-        var el = document.querySelector('div[contenteditable="true"]');
-        el.addEventListener('input', function (e)
+        if ( typeof msg.encrypt === 'string' )
+        {
+            encrypt( msg.encrypt, function ( encrypted ) 
             {
-                console.log(e);
-            });
-        // el.innerHTML = encrypted;
+                console.log( 'encrypted', encrypted );
+                // var el = document.querySelector('div[contenteditable="true"] span[data-text="true"]');
+                var el = document.querySelector('div[contenteditable="true"]');
+                el.addEventListener('input', function (e)
+                    {
+                        console.log(e);
+                    });
+                // el.innerHTML = encrypted;
 
 
-// var keyboardEvent = document.createEvent("KeyboardEvent");
-// var initMethod = typeof keyboardEvent.initKeyboardEvent !== 'undefined' ? "initKeyboardEvent" : "initKeyEvent";
+                // var keyboardEvent = document.createEvent("KeyboardEvent");
+                // var initMethod = typeof keyboardEvent.initKeyboardEvent !== 'undefined' ? "initKeyboardEvent" : "initKeyEvent";
 
 
-// keyboardEvent[initMethod](
-//                    "keydown", // event type : keydown, keyup, keypress
-//                     true, // bubbles
-//                     true, // cancelable
-//                     window, // viewArg: should be window
-//                     false, // ctrlKeyArg
-//                     false, // altKeyArg
-//                     false, // shiftKeyArg
-//                     false, // metaKeyArg
-//                      // keyCodeArg : unsigned long the virtual key code, else 0
-//                     0, "e".charCodeAt(0) // charCodeArgs : unsigned long the Unicode character associated with the depressed key, else 0
-// );
-// document.dispatchEvent(keyboardEvent);
+                // keyboardEvent[initMethod](
+                //                    "keydown", // event type : keydown, keyup, keypress
+                //                     true, // bubbles
+                //                     true, // cancelable
+                //                     window, // viewArg: should be window
+                //                     false, // ctrlKeyArg
+                //                     false, // altKeyArg
+                //                     false, // shiftKeyArg
+                //                     false, // metaKeyArg
+                //                      // keyCodeArg : unsigned long the virtual key code, else 0
+                //                     0, "e".charCodeAt(0) // charCodeArgs : unsigned long the Unicode character associated with the depressed key, else 0
+                // );
+                // document.dispatchEvent(keyboardEvent);
 
-        // var allElements = document.querySelectorAll( 'a' );
-        // for (var i = 0; i < allElements.length; i++) {
-        //     if ( allElements[i].innerHTML === 'Send' ) {
-        //         allElements[i].click();
-        //     }
-        // }
-    });
 
-    // If the received message has the expected format...
-    if (msg.text === 'report_back') {
-        // Call the specified callback, passing
-        // the web-page's DOM content as argument
-        sendResponse(document.all[0].outerHTML);
-    }
+
+                // var allElements = document.querySelectorAll( 'a' );
+                // for (var i = 0; i < allElements.length; i++) {
+                //     if ( allElements[i].innerHTML === 'Send' ) {
+                //         allElements[i].click();
+                //     }
+                // }
+
+            } );
+        } 
+        else if ( typeof msg.decrypt === 'string' )
+        {
+            decrypt( msg.decrypt, function ( decrypted ) 
+            {
+                sendResponse(decrypted);
+            } );
+        }  
 });
 
 
