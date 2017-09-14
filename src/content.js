@@ -86,7 +86,7 @@ var encrypt = function ( decrypted, callback )
 
 var decrypt = function ( encrypted, callback )
 {
-    console.log( 'trying to decrypt', encrypted );
+    // console.log( 'trying to decrypt', encrypted );
 
     var privKeyObj = openpgp.key.readArmored( thisPerson.privkey ).keys[ 0 ];
     privKeyObj.decrypt( passphrase );
@@ -168,11 +168,81 @@ var post = function ( text )
             }
         }
     }
+};
 
+
+function triggerMouseEvent (node, eventType) {
+    var clickEvent = document.createEvent ('MouseEvents');
+    clickEvent.initEvent (eventType, true, true);
+    node.dispatchEvent (clickEvent);
+}
+
+function trytoselect(node)
+{
+
+    selectElementContents( node );
+    node.click();
+    simulate( node, 'click' );
+    simulateClick( node );
+    simulateClk( node );
+
+    triggerMouseEvent (node, "mouseover");
+    triggerMouseEvent (node, "mousedown");
+    triggerMouseEvent (node, "mouseup");
+    triggerMouseEvent (node, "click");
+}
+
+function submit()
+{
+    var mainDiv = document.querySelector('div[class~="_kmc"]');
+
+    var nodes = [ mainDiv ].concat( getChildNodes( mainDiv ) );
+    for ( var node of nodes )
+    {
+        trytoselect(node);
+    }
+    var el = document.querySelector( 'a[title="Send a Like"]');
+    
+    trytoselect(el);
     // var allElements = document.querySelectorAll( 'a' );
     // for (var i = 0; i < allElements.length; i++) {
     //     if ( allElements[i].innerHTML === 'Send' ) {
     //         allElements[i].click();
     //     }
     // }
-};
+}
+
+function getChildNodes(el)
+{
+    var result = [];
+    if ( typeof el.childNodes === 'object' && el.childNodes.length > 0 )
+    {
+        for ( var node of el.childNodes )
+        {   
+            result.push( node );
+            result = result.concat( getChildNodes( node ) );
+        }
+    }
+    return result;
+}
+
+
+function simulateClk(targetElement)
+{
+    var evt = new MouseEvent("click", {
+        view: window,
+        bubbles: true,
+        cancelable: true,
+        clientX: 20,
+        /* whatever properties you want to give it */
+    });
+    targetElement.dispatchEvent(evt);
+}
+
+function selectElementContents(el) {
+    var range = document.createRange();
+    range.selectNodeContents(el);
+    var sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+}
